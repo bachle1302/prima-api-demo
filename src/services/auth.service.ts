@@ -1,5 +1,5 @@
 import prisma from '../prisma';
-import { AppError } from '../utils/AppError';
+import { AppError } from '../utils/appError';
 import { comparePassword, hashPassword } from '../utils/hash';
 import {
     signAccessToken,
