@@ -12,7 +12,7 @@ const app = express()
 app.use(morgan('dev'));
 app.use(cors({
   // Cho phép origin của Frontend
-  origin: 'http://localhost:3001', 
+  origin: ['http://localhost:3001/','http://localhost:3001/','https://31jkf0n8-3001.asse.devtunnels.ms'], 
   
   // Cho phép gửi kèm Cookie (quan trọng cho Refresh Token)
   credentials: true, 
