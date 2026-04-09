@@ -11,17 +11,9 @@ const app = express()
 
 app.use(morgan('dev'));
 app.use(cors({
-  // Cho phép origin của Frontend
-  origin: 'http://localhost:3001', 
-  
-  // Cho phép gửi kèm Cookie (quan trọng cho Refresh Token)
-  credentials: true, 
-  
-  // Các phương thức được phép
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  
-  // Các Header được phép gửi lên
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: '*', // Cho phép tất cả các trang web truy cập vào API này
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
 }));
 
 app.use(express.json())
