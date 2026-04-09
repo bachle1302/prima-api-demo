@@ -56,7 +56,10 @@ export const refreshToken = catchAsync(async (req: Request, res: Response) => {
             path: '/',
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
-        res.status(200).json({ accessToken: accessToken, refreshToken: refreshToken });
+        res.status(200).json({
+            accessToken: accessToken,
+            refreshToken: refreshToken
+        });
     } catch (error) {
         res.status(401).json({ message: 'Invalid token' });
     }
@@ -69,7 +72,12 @@ export const logout = catchAsync(async (req: Request, res: Response) => {
             await authService.logout(token);
         }
 
-        res.clearCookie('refreshToken');
+        res.clearCookie('refreshToken', {
+            httpOnly: true,
+            secure: true, // Phải có nếu lúc set bạn để true
+            sameSite: 'none', // Phải có nếu bạn dùng cross-domain (Render - Localhost)
+            path: '/' // Mặc định là '/', nhưng hãy ghi rõ để chắc chắn
+        });
 
         return res.json({ message: 'Logged out' });
     } catch (err: any) {
@@ -86,7 +94,12 @@ export const logoutAll = catchAsync(async (req: AuthRequest, res: Response) => {
         }
         await authService.logoutAll(userId);
 
-        res.clearCookie('refreshToken');
+        res.clearCookie('refreshToken', {
+            httpOnly: true,
+            secure: true, // Phải có nếu lúc set bạn để true
+            sameSite: 'none', // Phải có nếu bạn dùng cross-domain (Render - Localhost)
+            path: '/' // Mặc định là '/', nhưng hãy ghi rõ để chắc chắn
+        });
 
         return res.json({ message: 'Logged out from all devices' });
     } catch (err: any) {
