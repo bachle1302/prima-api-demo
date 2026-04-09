@@ -36,7 +36,7 @@ export const loginUser = catchAsync(async (req: Request, res: Response) => {
         path: '/',
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
-    res.status(200).json({ accessToken });
+    res.status(200).json({ accessToken, refreshToken });
 });
 
 export const refreshToken = catchAsync(async (req: Request, res: Response) => {
@@ -56,7 +56,7 @@ export const refreshToken = catchAsync(async (req: Request, res: Response) => {
             path: '/',
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
-        res.status(200).json({ accessToken: accessToken });
+        res.status(200).json({ accessToken: accessToken, refreshToken: refreshToken });
     } catch (error) {
         res.status(401).json({ message: 'Invalid token' });
     }
