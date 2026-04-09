@@ -62,7 +62,6 @@ export const refreshTokenService = async (oldToken: string) => {
     }
 
     let payload;
-    console.log('Received refresh token:', oldToken);
     try {
         payload = verifyRefreshToken(oldToken);
         console.log('Payload from refresh token:', payload);

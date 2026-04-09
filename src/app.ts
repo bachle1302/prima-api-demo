@@ -7,32 +7,50 @@ import uploadRouter from './routes/upload.route'
 import comicRoute from './routes/comic.route'
 import { errorHandler } from './middlewares/error.middleware'
 import morgan from 'morgan'
+
 const app = express()
 
+// Danh sách các domain được phép truy cập
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://prima-fe-demo.vercel.app',
+];
+
 app.use(morgan('dev'));
+
 app.use(cors({
-  // Cho phép origin của Frontend
-  origin: 'https://prima-fe-demo-jfxnnicex-bachles-projects.vercel.app', 
-  
-  // Cho phép gửi kèm Cookie (quan trọng cho Refresh Token)
+  origin: function (origin, callback) {
+    // Cho phép các request không có origin (như Postman hoặc các công cụ server-to-server)
+    if (!origin) return callback(null, true);
+
+    const isAllowed = allowedOrigins.includes(origin) || 
+                     origin.endsWith('.vercel.app'); // Cho phép tất cả sub-domain của Vercel
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.log("CORS blocked for origin:", origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true, 
-  
-  // Các phương thức được phép
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  
-  // Các Header được phép gửi lên
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  exposedHeaders: ['set-cookie']
 }));
 
 app.use(express.json())
 app.use(cookieParser());
+
 app.use('/', (req, res, next) => {
   console.log(`${req.method} ${req.path}`);
   next();
 });
+
 app.use('/api/auth', authRouter)
 app.use('/api/users', userRouter)
 app.use('/api', uploadRouter)
 app.use("/api", comicRoute);
 app.use(errorHandler);
+
 export default app
