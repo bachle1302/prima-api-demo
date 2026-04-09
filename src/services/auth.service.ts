@@ -26,7 +26,12 @@ export const registerUser = async (email: string, password: string) => {
     });
 };
 
-export const loginUser = async (email: string, password: string, userAgent: string, ip: string) => {
+export const loginUser = async (
+    email: string,
+    password: string,
+    userAgent: string,
+    ip: string
+) => {
     const user = await prisma.user.findUnique({
         where: { email }
     });
@@ -73,35 +78,37 @@ export const refreshTokenService = async (oldToken: string) => {
     if (!tokenInDb) {
         throw new Error('Invalid token');
     }
-    console.log('trước khi xóa token cũ, đã tìm thấy token trong database:', tokenInDb);
-    await prisma.refreshToken.delete({
-        where: { token: oldToken }
-    });
+    console.log('Found token in database:', tokenInDb);
 
     const newAccessToken = signAccessToken(payload);
     const newRefreshToken = signRefreshToken(payload);
-    console.log('xin chào' + newAccessToken, newRefreshToken);
-    // tạo token mới
-    try{
-        await prisma.refreshToken.create({
-            data: {
-                token: newRefreshToken,
-                userId: payload.userId,
-                userAgent: tokenInDb.userAgent,
-                ip: tokenInDb.ip,
-                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
-            }
-        });
-        console.log('đã chạy đến sau khi tạo refresh token mới và thêm vào database');
+
+    try {
+        // Delete old token và create new token atomically
+        await Promise.all([
+            prisma.refreshToken.delete({
+                where: { token: oldToken }
+            }),
+            prisma.refreshToken.create({
+                data: {
+                    token: newRefreshToken,
+                    userId: payload.userId,
+                    userAgent: tokenInDb.userAgent,
+                    ip: tokenInDb.ip,
+                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+                }
+            })
+        ]);
+        console.log('✓ Token rotated successfully');
     } catch (err) {
-        console.error('Lỗi khi tạo refresh token mới:', err);
-        throw new Error('Failed to create new refresh token');
+        console.error('Lỗi khi rotate refresh token:', err);
+        throw new Error('Failed to rotate refresh token');
     }
+
     return {
         accessToken: newAccessToken,
         refreshToken: newRefreshToken
     };
-
 };
 
 export const getDevices = async (userId: number) => {
@@ -115,7 +122,7 @@ export const getDevices = async (userId: number) => {
             createdAt: true
         }
     });
-} 
+};
 export const logout = async (refeshtoken: string) => {
     if (!refeshtoken) return;
     await prisma.refreshToken.deleteMany({

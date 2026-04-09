@@ -15,6 +15,13 @@ export const registerUser = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+const cookieOptions: import('express').CookieOptions = {
+    httpOnly: true,
+    secure: true, // luôn true để cookie cross-domain hoạt động (sameSite: 'none' cần secure: true)
+    sameSite: 'none',
+    path: '/'
+};
+
 export const loginUser = catchAsync(async (req: Request, res: Response) => {
     const { email, password } = req.body;
     const userAgent = req.headers['user-agent'] || 'unknown';
@@ -29,11 +36,7 @@ export const loginUser = catchAsync(async (req: Request, res: Response) => {
         ip
     );
     res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: true,
-        // Sửa thành 'none' để hỗ trợ gọi API xuyên domain/port trên HTTPS
-        sameSite: 'none',
-        path: '/',
+        ...cookieOptions,
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
     res.status(200).json({ accessToken, refreshToken });
@@ -41,26 +44,29 @@ export const loginUser = catchAsync(async (req: Request, res: Response) => {
 
 export const refreshToken = catchAsync(async (req: Request, res: Response) => {
     const token = req.cookies.refreshToken;
-    console.log('kiểm tra có token k: ', token);
+    console.log('=== REFRESH TOKEN ENDPOINT ===');
+    console.log('Received token from cookie:', token);
+
     if (!token) {
         return res.status(401).json({ message: 'No token provided' });
     }
     try {
         const { accessToken, refreshToken } =
             await authService.refreshTokenService(token);
+
+        console.log('Setting cookie with refreshToken:', refreshToken);
         res.cookie('refreshToken', refreshToken, {
-            httpOnly: true,
-            secure: true,
-            // Sửa thành 'none' để hỗ trợ gọi API xuyên domain/port trên HTTPS
-            sameSite: 'none',
-            path: '/',
+            ...cookieOptions,
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
+        console.log('Cookie options:', cookieOptions);
+
         res.status(200).json({
             accessToken: accessToken,
             refreshToken: refreshToken
         });
     } catch (error) {
+        console.error('Refresh token error:', error);
         res.status(401).json({ message: 'Invalid token' });
     }
 });
@@ -72,12 +78,7 @@ export const logout = catchAsync(async (req: Request, res: Response) => {
             await authService.logout(token);
         }
 
-        res.clearCookie('refreshToken', {
-            httpOnly: true,
-            secure: true, // Phải có nếu lúc set bạn để true
-            sameSite: 'none', // Phải có nếu bạn dùng cross-domain (Render - Localhost)
-            path: '/' // Mặc định là '/', nhưng hãy ghi rõ để chắc chắn
-        });
+        res.clearCookie('refreshToken', cookieOptions);
 
         return res.json({ message: 'Logged out' });
     } catch (err: any) {
@@ -94,12 +95,7 @@ export const logoutAll = catchAsync(async (req: AuthRequest, res: Response) => {
         }
         await authService.logoutAll(userId);
 
-        res.clearCookie('refreshToken', {
-            httpOnly: true,
-            secure: true, // Phải có nếu lúc set bạn để true
-            sameSite: 'none', // Phải có nếu bạn dùng cross-domain (Render - Localhost)
-            path: '/' // Mặc định là '/', nhưng hãy ghi rõ để chắc chắn
-        });
+        res.clearCookie('refreshToken', cookieOptions);
 
         return res.json({ message: 'Logged out from all devices' });
     } catch (err: any) {
