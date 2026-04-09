@@ -11,24 +11,18 @@ const app = express()
 
 app.use(morgan('dev'));
 app.use(cors({
-  origin: function (origin, callback) {
-    // 1. Nếu không có origin (như Postman, Mobile App) thì cho phép
-    // 2. Nếu có origin, trả về chính origin đó để "chiều lòng" trình duyệt
-    if (!origin) return callback(null, true);
-    
-    // Bạn có thể giới hạn danh sách tại đây nếu muốn bảo mật hơn
-    // const allowedOrigins = ['http://localhost:3001', 'https://prima-api-demo.onrender.com'];
-    // if (allowedOrigins.includes(origin)) return callback(null, true);
-
-    return callback(null, true); 
-  },
-  credentials: true, // BẮT BUỘC để nhận/gửi Cookie
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  // Cho phép origin của Frontend
+  origin: 'http://localhost:3000', 
+  
+  // Cho phép gửi kèm Cookie (quan trọng cho Refresh Token)
+  credentials: true, 
+  
+  // Các phương thức được phép
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  
+  // Các Header được phép gửi lên
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
-// Quan trọng: Phải có dòng này để xử lý yêu cầu kiểm tra (Preflight) của trình duyệt
-app.options('*', cors());
 
 app.use(express.json())
 app.use(cookieParser());
