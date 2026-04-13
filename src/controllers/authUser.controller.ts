@@ -51,23 +51,24 @@ export const refreshToken = catchAsync(async (req: Request, res: Response) => {
         return res.status(401).json({ message: 'No token provided' });
     }
     try {
-        const { accessToken, refreshToken } =
-            await authService.refreshTokenService(token);
-
-        console.log('Setting cookie with refreshToken:', refreshToken);
-        res.cookie('refreshToken', refreshToken, {
-            ...cookieOptions,
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
-        console.log('Cookie options:', cookieOptions);
+        const { accessToken } = await authService.refreshTokenService(token);
 
         res.status(200).json({
-            accessToken: accessToken,
-            refreshToken: refreshToken
-        });
-    } catch (error) {
-        console.error('Refresh token error:', error);
-        res.status(401).json({ message: 'Invalid token' });
+            accessToken: accessToken        });
+    } catch (error: any) {
+        if (error.message === 'Token has been revoked or is invalid' || error.message === 'Invalid or expired refresh token') {
+            // Xóa cookie ở trình duyệt
+            res.clearCookie('refreshToken', {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                path: '/' // Đảm bảo đúng path lúc set cookie
+            });
+            
+            return res.status(401).json({ message: 'Session expired, please login again' });
+        }
+
+        res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 export const logout = catchAsync(async (req: Request, res: Response) => {

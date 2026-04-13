@@ -64,49 +64,33 @@ export const refreshTokenService = async (oldToken: string) => {
     let payload;
     try {
         payload = verifyRefreshToken(oldToken);
-        console.log('Payload from refresh token:', payload);
     } catch (err) {
-        throw new Error('Invalid token');
+        throw new Error('Invalid or expired refresh token');
     }
 
-    // tìm user theo token
+    // 1. Kiểm tra token có tồn tại trong DB không
     const tokenInDb = await prisma.refreshToken.findUnique({
         where: { token: oldToken }
     });
 
+    // Nếu không thấy trong DB hoặc token đã bị thu hồi (revoke)
     if (!tokenInDb) {
-        throw new Error('Invalid token');
+        throw new Error('Token has been revoked or is invalid');
     }
-    console.log('Found token in database:', tokenInDb);
 
+    // 2. Kiểm tra ngày hết hạn trong DB (optional nếu JWT đã có exp)
+    if (new Date() > tokenInDb.expiresAt) {
+        // Nếu hết hạn thì xóa luôn trong DB
+        await prisma.refreshToken.delete({ where: { token: oldToken } });
+        throw new Error('Refresh token expired');
+    }
+
+    // 3. CHỈ ký Access Token mới
+    // Giữ nguyên Refresh Token cũ (oldToken)
     const newAccessToken = signAccessToken(payload);
-    const newRefreshToken = signRefreshToken(payload);
-
-    try {
-        // Delete old token và create new token atomically
-        await Promise.all([
-            prisma.refreshToken.delete({
-                where: { token: oldToken }
-            }),
-            prisma.refreshToken.create({
-                data: {
-                    token: newRefreshToken,
-                    userId: payload.userId,
-                    userAgent: tokenInDb.userAgent,
-                    ip: tokenInDb.ip,
-                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
-                }
-            })
-        ]);
-        console.log('✓ Token rotated successfully');
-    } catch (err) {
-        console.error('Lỗi khi rotate refresh token:', err);
-        throw new Error('Failed to rotate refresh token');
-    }
 
     return {
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken
+        accessToken: newAccessToken
     };
 };
 
