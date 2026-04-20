@@ -14,6 +14,7 @@ const app = express()
 const allowedOrigins = [
   'http://localhost:3000',
   'https://prima-fe-demo.vercel.app',
+  'https://prima-fe-demo-32w8.vercel.app'
 ];
 
 app.use(morgan('dev'));
