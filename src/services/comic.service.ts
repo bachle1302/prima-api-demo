@@ -1,40 +1,71 @@
-import prisma from "../prisma";
+import prisma from '../prisma';
 
 export const getComics = async (
-  page: number,
-  limit: number,
-  search: string,
-  sort: string
+    page: number,
+    limit: number,
+    search: string,
+    sort: string
 ) => {
-  const skip = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
-  // 🔥 filter search
-  const where = {
-    title: {
-      contains: search,
+    // 🔥 filter search
+    const where = {
+        title: {
+            contains: search
+        }
+    };
+
+    // 🔥 query data
+    const comics = await prisma.comic.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: {
+            createdAt: sort === 'asc' ? 'asc' : 'desc'
+        }
+    });
+
+    // 🔥 đếm tổng
+    const total = await prisma.comic.count({ where });
+
+    return {
+        data: comics,
+        pagination: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit)
+        }
+    };
+};
+
+export const createComic = async (title: string, image: string) => {
+    return prisma.comic.create({
+        data: {
+            title,
+            image
+        }
+    });
+};
+
+export const updateComic = async (
+    id: number,
+    title: string,
+    image?: string
+) => {
+    const updateData: any = { title };
+    if (image) {
+        updateData.image = image;
     }
-  };
 
-  // 🔥 query data
-  const comics = await prisma.comic.findMany({
-    where,
-    skip,
-    take: limit,
-    orderBy: {
-      createdAt: sort === "asc" ? "asc" : "desc"
-    }
-  });
+    return prisma.comic.update({
+        where: { id },
+        data: updateData
+    });
+};
 
-  // 🔥 đếm tổng
-  const total = await prisma.comic.count({ where });
-
-  return {
-    data: comics,
-    pagination: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit)
-    }
-  };
+export const deleteComic = async (id: number) => {
+    return prisma.comic.delete({
+        where: { id }
+    });
 };
